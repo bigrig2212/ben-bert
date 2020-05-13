@@ -1,0 +1,48 @@
+ADD file:45a381049c52b5664e5e911dead277b25fadbae689c0bb35be3c42dff0f2dffe in /
+LABEL org.label-schema.schema-version=1.0 org.label-schema.name=CentOS Base Image org.label-schema.vendor=CentOS org.label-schema.license=GPLv2 org.label-schema.build-date=20191001
+CMD ["/bin/bash"]
+LABEL maintainer=NVIDIA CORPORATION <sw-cuda-installer@nvidia.com>
+/bin/sh -c NVIDIA_GPGKEY_SUM=d1be581509378368edeec8c1eb2958702feedf3bc3d17011adbf24efacce4ab5 && curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/7fa2af80.pub | sed '/^Version/d' > /etc/pki/rpm-gpg/RPM-GPG-KEY-NVIDIA &&     echo "$NVIDIA_GPGKEY_SUM  /etc/pki/rpm-gpg/RPM-GPG-KEY-NVIDIA" | sha256sum -c --strict -
+COPY file:ac92ff4b158017dfd91da460f62eb86f57f7c58aaad5335996ab3cda9d097ce5 in /etc/yum.repos.d/cuda.repo
+ENV CUDA_VERSION=10.0.130
+ENV CUDA_PKG_VERSION=10-0-10.0.130-1
+/bin/sh -c yum install -y cuda-cudart-$CUDA_PKG_VERSION cuda-compat-10-0 &&     ln -s cuda-10.0 /usr/local/cuda &&     rm -rf /var/cache/yum/*
+/bin/sh -c echo "/usr/local/nvidia/lib" >> /etc/ld.so.conf.d/nvidia.conf &&     echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf
+ENV PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+ENV NVIDIA_REQUIRE_CUDA=cuda>=10.0 brand=tesla,driver>=384,driver<385 brand=tesla,driver>=410,driver<411
+LABEL maintainer=NVIDIA CORPORATION <sw-cuda-installer@nvidia.com>
+/bin/sh -c yum install -y         cuda-libraries-$CUDA_PKG_VERSION cuda-nvtx-$CUDA_PKG_VERSION &&     rm -rf /var/cache/yum/*
+LABEL maintainer=NVIDIA CORPORATION <sw-cuda-installer@nvidia.com>
+ENV CUDNN_VERSION=7.6.5.32
+LABEL com.nvidia.cudnn.version=7.6.5.32
+/bin/sh -c CUDNN_DOWNLOAD_SUM=28355e395f0b2b93ac2c83b61360b35ba6cd0377e44e78be197b6b61b4b492ba &&     curl -fsSL http://developer.download.nvidia.com/compute/redist/cudnn/v7.6.5/cudnn-10.0-linux-x64-v7.6.5.32.tgz -O &&     echo "$CUDNN_DOWNLOAD_SUM  cudnn-10.0-linux-x64-v7.6.5.32.tgz" | sha256sum -c - &&     tar --no-same-owner -xzf cudnn-10.0-linux-x64-v7.6.5.32.tgz -C /usr/local --wildcards 'cuda/lib64/libcudnn.so.*' &&     rm cudnn-10.0-linux-x64-v7.6.5.32.tgz &&     ldconfig
+LABEL maintainer=praveen.batchu@phenompeople.com
+ENV container=docker
+/bin/sh -c yum install -q -e 0 -y wget make gcc-c++ openssl-devel sqlite-devel zlib-devel bzip2-devel shadow-utils yum-utils tar gzip&&         useradd -d /opt/deployment phenom -u 1004 &&         mkdir -p /opt/deployment/scripts
+ARG PYTHON_VERSION=3.6.3
+ARG PYTHON_PIP_VERSION=9.0.1
+ENV PYTHON_VERSION=3.6.3 PYTHON_PIP_VERSION=9.0.1 SETUP_DIRECTORY=/opt/python/cache
+ADD dir:33071b2c9661394d56211869898ea5e7a2a323580b8f3418b526e028c8b04a7d in /opt/deployment/scripts
+/bin/sh -c chmod +x /opt/deployment/scripts/install.sh
+/bin/sh -c /opt/deployment/scripts/install.sh  &&     rm -rf /opt/deployment/scripts &&     rm -rf /opt/python/cache/sources/Python-${PYTHON_VERSION}.tgz
+/bin/sh -c pip3 install tensorflow-gpu &&     pip3 install --upgrade setuptools
+ONBUILD RUN  yum update --security -q -y
+ONBUILD RUN package-cleanup --oldkernels --count=1 -y -q
+/bin/sh -c yum update --security -q -y
+/bin/sh -c package-cleanup --oldkernels --count=1 -y -q
+LABEL maintainer=praveen.batchu@phenompeople.com
+LABEL project=bert-server
+EXPOSE 5555/tcp 5556/tcp
+ARG APP_HOME=/opt/deployment
+ARG PROJECT_NAME=bert-server
+ENV APP_HOME=/opt/deployment PROJECT_NAME=bert-server PROJECT_HOME=/opt/deployment/bert-server
+ADD file:5dd9c6879bb3101bdf12ef5796d5ec53e238cbe08f6ce078f3a0c7fc5f6deb7f in /
+/bin/sh -c yum install -y -q unzip &&         pip3 install -r requirements.txt &&     mkdir -p ${PROJECT_HOME}/models &&     mkdir -p ${PROJECT_HOME}/tmp &&     mkdir -p ${PROJECT_HOME}/logs
+COPY file:a0fa4a8fe5ea65b600a39a33c351cd300679e18f162183b4005a120aa2f5f275 in /opt/deployment/bert-server/start-server.sh
+ADD tarsum.v1+sha256:4644e02691528ef1d6780ba86b820e8238c26ef8c12418737f6c60a222b10c48 in /opt/deployment/bert-server/models
+/bin/sh -c unzip ${PROJECT_HOME}/models/uncased_L-12_H-768_A-12.zip -d ${PROJECT_HOME}/models &&         chmod a+x  ${PROJECT_HOME}/start-server.sh
+WORKDIR /opt/deployment/bert-server
+ENTRYPOINT ["./start-server.sh"]
