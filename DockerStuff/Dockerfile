@@ -18,9 +18,13 @@ RUN yum install -y -q unzip && \
 #RUN pip install -U bert-serving-client flask flask-compress flask-cors flask-json
 #RUN pip install bert-serving-server[http]
 COPY start-server.sh ${PROJECT_HOME}/start-server.sh
+#MULTILINGUAL MODEL
+ADD https://storage.googleapis.com/bert_models/2018_11_23/multi_cased_L-12_H-768_A-12.zip ${PROJECT_HOME}/models
+RUN unzip ${PROJECT_HOME}/models/multi_cased_L-12_H-768_A-12.zip -d ${PROJECT_HOME}/models && \
+#BASE MODEL
 #ADD https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-12_H-768_A-12.zip ${PROJECT_HOME}/models
-ADD /models/uncased_L-12_H-768_A-12.zip ${PROJECT_HOME}/models
-RUN unzip ${PROJECT_HOME}/models/uncased_L-12_H-768_A-12.zip -d ${PROJECT_HOME}/models && \
+#ADD /models/uncased_L-12_H-768_A-12.zip ${PROJECT_HOME}/models
+#RUN unzip ${PROJECT_HOME}/models/uncased_L-12_H-768_A-12.zip -d ${PROJECT_HOME}/models && \
 	chmod a+x  ${PROJECT_HOME}/start-server.sh
 WORKDIR ${PROJECT_HOME}
 ENTRYPOINT ["./start-server.sh" ]
