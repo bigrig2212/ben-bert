@@ -5,4 +5,4 @@ NUMBER_OF_PROCS=$(($NUMBER_OF_PROCS-1))
 #UNCASED
 #bert-serving-start -http_port 8125 -num_worker=${NUMBER_OF_PROCS} -model_dir models/uncased_L-12_H-768_A-12
 #MULTILINGUAL
-bert-serving-start -http_port 8125 -num_worker=${NUMBER_OF_PROCS} -model_dir models/multi_cased_L-12_H-768_A-12
+bert-serving-start -http_port 8080 -num_worker=${NUMBER_OF_PROCS} -model_dir models/uncased_L-12_H-768_A-12
