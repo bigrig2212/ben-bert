@@ -1,5 +1,4 @@
 FROM phenompeople/python:3.6.3
-LABEL maintainer="gaurav.vergiya@phenompeople.com"
 LABEL project="bert-server"
 EXPOSE 5555 5556
 EXPOSE 8080
